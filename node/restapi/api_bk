@@ -1,0 +1,68 @@
+let express = require('express');
+let app = express();
+let dotenv = require('dotenv');
+dotenv.config()
+let port = process.env.PORT || 9870;
+let mongo = require('mongodb');
+let MongoClient = mongo.MongoClient;
+let mongoUrl = process.env.MonogUrl;
+let db;
+
+let authKey = "Basic11a02918ead40aeee034e16b071a9a0d"
+
+function auth(key){
+  if(authKey === key){
+    return true
+  }else{
+    return false
+  }
+}
+
+app.get('/',(req,res) => {
+    res.send('Express Server default')
+})
+
+app.get('/location',(req,res) => {
+    //let key = req.query.key;
+    let key = req.header('x-basic-auth')
+    if(authKey === key){
+      db.collection('location').find().toArray((err,result) => {
+        if(err) throw err;
+        res.send(result)
+      })
+    }else{
+      res.send('Unauthorized Calling')
+    }
+})
+
+app.get('/mealType',(req,res) => {
+  if(auth(req.header('x-basic-auth'))){
+    db.collection('mealType').find().toArray((err,result) => {
+      if(err) throw err;
+      res.send(result)
+    })
+  }else{
+    res.send('Unauthorized Calling')
+  }
+  
+})
+
+app.get('/restaurants',(req,res) => {
+  db.collection('restaurants').find().toArray((err,result) => {
+    if(err) throw err;
+    res.send(result)
+  })
+})
+
+
+//Connection with db
+MongoClient.connect(mongoUrl,(err,client) => {
+  if(err) console.log(`Error While Connecting`);
+  db = client.db('internfeb');
+  app.listen(port,(err) => {
+    if(err) throw err;
+    console.log(`Express Server listening on port ${port}`)
+  })
+})
+
+
